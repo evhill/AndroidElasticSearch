@@ -9,7 +9,10 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import ca.ualberta.ssrg.androidelasticsearch.R;
 
@@ -21,7 +24,10 @@ public class MainActivity extends Activity {
 	private ESMovieManager movieManager;
 	private MoviesController moviesController;
 
-	private Context mContext = this;
+    private Button searchButton;
+    private EditText searchText;
+
+    private Context mContext = this;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -40,38 +46,52 @@ public class MainActivity extends Activity {
 		movieList.setAdapter(moviesViewAdapter);
 		movieManager = new ESMovieManager("");
 
+        searchButton = (Button) findViewById(R.id.button1);
+        searchText = (EditText) findViewById(R.id.editText1);
+
 		// Show details when click on a movie
 		movieList.setOnItemClickListener(new OnItemClickListener() {
 
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int pos,	long id) {
-				int movieId = movies.get(pos).getId();
-				startDetailsActivity(movieId);
-			}
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
+                int movieId = movies.get(pos).getId();
+                startDetailsActivity(movieId);
+            }
 
-		});
+        });
 
 		// Delete movie on long click
 		movieList.setOnItemLongClickListener(new OnItemLongClickListener() {
 
-			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-				Movie movie = movies.get(position);
-				Toast.makeText(mContext, "Deleting " + movie.getTitle(), Toast.LENGTH_LONG).show();
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Movie movie = movies.get(position);
+                Toast.makeText(mContext, "Deleting " + movie.getTitle(), Toast.LENGTH_LONG).show();
 
-				Thread thread = new DeleteThread(movie.getId());
-				thread.start();
+                Thread thread = new DeleteThread(movie.getId());
+                thread.start();
 
-				return true;
-			}
-		});
+                return true;
+            }
+        });
+
+        // onclick listener for the search button runs the search function
+        searchButton.setOnClickListener(new View.OnClickListener(){
+
+            public void onClick(View v){
+                String searchString = searchText.getText().toString();
+                search(searchString);
+            }
+        });
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
 		
-		
+		// You cannnt access the network from the gui thread
+		// So! Let us create another thread to do that work.
+		// If we try to use the gui thread  -- the gui will stop and wait.
 		SearchThread thread = new SearchThread("*");
 
 		thread.start();
@@ -97,13 +117,13 @@ public class MainActivity extends Activity {
 	 * Search for movies with a given word(s) in the text view
 	 * @param view
 	 */
-	public void search(View view) {
+	public void search(String string) {
 		movies.clear();
 
-		// TODO: Extract search query from text view
-		
-		// TODO: Run the search thread
-		
+        SearchThread thread = new SearchThread(string);
+
+        thread.start();
+
 	}
 	
 	/**
